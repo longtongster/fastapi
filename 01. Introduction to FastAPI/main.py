@@ -9,12 +9,34 @@ class Item(BaseModel):
 
 app = FastAPI()
 
-items = {"scissors": Item(name="scissors", quantity=100)}
+items = {}
 
-
+@app.post("/items")
+def create(item: Item):
+    name = item.name
+    if name in items:
+        raise HTTPException(status_code=409, detail="Item exists")
+    items[name] = item
+    return {"message": f"Added {name} to items."}
+  
 @app.get("/items")
 def read(name: str):
-    print(name)
     if name not in items:
         raise HTTPException(status_code=404, detail="Item not found")
-    return items[name]
+    return items[name]  
+  
+@app.put("/items")
+def update(item: Item):
+    name = item.name
+    if name not in items:
+        raise HTTPException(status_code=404, detail="Item not found")
+    items[name] = item
+    return {"message": f"Updated {name}."}
+  
+@app.delete("/items")
+def delete(item: Item):
+    name = item.name
+    if name not in items:
+        raise HTTPException(status_code=405, detail="Item not found")
+    del items[name]
+    return {"message": f"Deleted {name}."}
