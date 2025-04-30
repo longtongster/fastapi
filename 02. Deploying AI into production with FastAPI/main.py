@@ -1,26 +1,25 @@
+import numpy as np
+from scorer import CommentMetrics, CommentScorer
 from fastapi import FastAPI
-from pydantic import BaseModel
-import pandas as pd
-import joblib
 
-# Load the pre-trained model
-model = joblib.load('penguin_classifier.pkl')
-
-# Print the type of the loaded model
-print(f"Loaded model type: {type(model)}")
-class PengiunFeatures(BaseModel):
-    bill_length_mm: float
-    bill_depth_mm: float
-    flipper_length_mm: float
-    body_mass_g: float
-    
-# Create FastAPI instance
 app = FastAPI()
+model = CommentScorer()
 
-# # Create a POST request endpoint at the route "/predict"
-@app.post("/predict")
-async def predict_progression(features: PengiunFeatures):
-    input_data = pd.DataFrame([features.model_dump()])
+@app.post("/predict_trust")
+def predict_trust(comment: CommentMetrics):
+    # Convert input and extract comment metrics
+    features = np.array([[
+        comment.length,
+        comment.user_reputation,
+        comment.report_count
+    ]])
+    # Get prediction from model 
+    score = model.predict(features)
+    return {
+        "trust_score": round(score, 2),
+        "comment_metrics": comment.dict()
+    }
     
-    prediction = model.predict(input_data)
-    return {"predicted_progression": prediction[0]}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8080)
